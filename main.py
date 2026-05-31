@@ -4,15 +4,11 @@ import io
 import base64
 import requests
 from flask import Flask, request, jsonify, render_template
-from dotenv import load_dotenv
 
 # Ensure Matplotlib uses a non-interactive backend before importing pyplot
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
-# Load environment variables
-load_dotenv()
 
 # Initialize NLTK/TextBlob Safely
 import nltk
@@ -181,15 +177,12 @@ def analyze():
     data = request.json or {}
     url = data.get('url', '')
     limit = int(data.get('limit', 100))
-    user_api_key = data.get('api_key', '').strip()
-    
-    # API key resolution: User Input -> Env Variable
-    api_key = user_api_key or os.getenv('YOUTUBE_API_KEY')
+    api_key = data.get('api_key', '').strip()
     
     if not api_key:
         return jsonify({
             'success': False,
-            'error': 'YouTube API Key is missing. Please provide it in the input panel or configure it on the server dotenv environment.'
+            'error': 'YouTube API Key is missing. Please enter your YouTube API Key in the control panel.'
         }), 400
         
     video_id = extract_video_id(url)
@@ -349,4 +342,14 @@ def analyze():
         }), 500
 
 if __name__ == '__main__':
+    import webbrowser
+    from threading import Timer
+    
+    def open_browser():
+        webbrowser.open_new("http://127.0.0.1:5000")
+        
+    # Only spawn browser opener in the main Flask process (prevents duplicate opening on reload)
+    if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        Timer(1.2, open_browser).start()
+        
     app.run(debug=True, port=5000)

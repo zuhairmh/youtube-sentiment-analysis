@@ -1092,16 +1092,9 @@
                     <div class="form-group">
                         <label for="apiKey">YouTube API Key v3</label>
                         <div class="input-wrapper">
-                            <input type="password" id="apiKey" placeholder="AIzaSy..." autocomplete="off">
+                            <input type="text" id="apiKey" placeholder="Paste your YouTube API Key here" autocomplete="off" required>
                             <i class="fa-solid fa-key"></i>
                         </div>
-                        <label class="api-key-save">
-                            <input type="checkbox" id="saveKey" checked>
-                            <span>Remember Key on this device</span>
-                        </label>
-                        <p class="helper-text">
-                            Key is stored locally in your browser's private localStorage. It is never shared.
-                        </p>
                     </div>
 
                     <!-- YouTube Video URL field -->
@@ -1288,14 +1281,7 @@
 
     <!-- Client Side App logic -->
     <script>
-        // Check for local storage API key
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedKey = localStorage.getItem('yt_api_key');
-            if (savedKey) {
-                document.getElementById('apiKey').value = savedKey;
-                document.getElementById('saveKey').checked = true;
-            }
-        });
+
 
         // Global variables for dashboard comments data
         let analysisData = null;
@@ -1347,20 +1333,11 @@
             const urlInput = document.getElementById('videoUrl').value.strip ? document.getElementById('videoUrl').value.strip() : document.getElementById('videoUrl').value;
             const apiKey = document.getElementById('apiKey').value.trim();
             const limit = document.getElementById('commentLimit').value;
-            const saveCheck = document.getElementById('saveKey').checked;
-
             hideNotification();
 
             if (!urlInput) {
                 showNotification("Please specify a YouTube video URL.");
                 return;
-            }
-
-            // Save key if checked
-            if (saveCheck && apiKey) {
-                localStorage.setItem('yt_api_key', apiKey);
-            } else {
-                localStorage.removeItem('yt_api_key');
             }
 
             // Display loading panel
