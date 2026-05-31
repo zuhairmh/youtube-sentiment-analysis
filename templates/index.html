@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Sentiment Lens — Comment Sentiment Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0B0F19 0%, #111827 100%);
+            --glass-bg: rgba(17, 24, 39, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.03);
+            
+            --primary: #6366F1;
+            --primary-glow: rgba(99, 102, 241, 0.35);
+            --primary-gradient: linear-gradient(95deg, #6366F1 0%, #8B5CF6 100%);
+            
+            --success: #10B981;
+            --success-glow: rgba(16, 185, 129, 0.15);
+            --neutral: #9CA3AF;
+            --neutral-glow: rgba(156, 163, 175, 0.15);
+            --danger: #F43F5E;
+            --danger-glow: rgba(244, 63, 94, 0.15);
+            
+            --text-main: #F3F4F6;
+            --text-muted: #9CA3AF;
+            --text-dark: #6B7280;
+            
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        /* Background elements */
+        .ambient-glow {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+            top: -100px;
+            right: -100px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .ambient-glow-2 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+            bottom: 10%;
+            left: -100px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Container Layout */
+        .wrapper {
+            position: relative;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            z-index: 1;
+        }
+
+        /* Glassmorphism Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            background-image: linear-gradient(to bottom, var(--glass-highlight), transparent);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo i {
+            font-size: 2rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px var(--primary-glow));
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #FFFFFF, #CBD5E1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo span {
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            margin-left: 0.5rem;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar Console Card */
+        .console-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background-image: linear-gradient(to bottom, var(--glass-highlight), transparent);
+        }
+
+        .card-title-sec {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dark);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 0.85rem 1rem 0.85rem 2.75rem;
+            background: rgba(10, 15, 26, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+            background: rgba(10, 15, 26, 0.8);
+        }
+
+        .input-wrapper input:focus + i {
+            color: var(--primary);
+        }
+
+        .helper-text {
+            font-size: 0.75rem;
+            color: var(--text-dark);
+            margin-top: 0.35rem;
+        }
+
+        .api-key-save {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            cursor: pointer;
+        }
+
+        .api-key-save input {
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .api-key-save span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Limit Custom Slider */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            accent-color: var(--primary);
+        }
+
+        .slider-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            min-width: 45px;
+            text-align: right;
+        }
+
+        /* Action Button */
+        .btn-analyze {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 14px;
+            color: #FFFFFF;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            transition: var(--transition);
+            margin-top: 1rem;
+        }
+
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+            filter: brightness(1.1);
+        }
+
+        .btn-analyze:active {
+            transform: translateY(1px);
+        }
+
+        /* Quick Info Block */
+        .instructions {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .instructions h4 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .instructions li {
+            list-style: none;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .instructions li i {
+            color: var(--primary);
+            margin-top: 0.2rem;
+        }
+
+        /* Main Workspace Display */
+        .main-display {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Welcome & Hero Section */
+        .welcome-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background-image: linear-gradient(to bottom, var(--glass-highlight), transparent);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+
+        .welcome-icon-box {
+            width: 90px;
+            height: 90px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+        }
+
+        .welcome-icon-box i {
+            font-size: 3rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-card h2 {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(to right, #FFFFFF, #E2E8F0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-card p {
+            max-width: 550px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Skeleton Screen Loader */
+        .loader-card {
+            display: none;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            min-height: 400px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .spinner-ring {
+            width: 70px;
+            height: 70px;
+            border: 4px solid rgba(99, 102, 241, 0.15);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: #FFFFFF;
+        }
+
+        .loader-status {
+            font-size: 0.95rem;
+            color: var(--primary);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        /* Skeleton lines */
+        .skeleton-loader {
+            width: 100%;
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .skeleton-line {
+            height: 12px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Error Banner */
+        .error-banner {
+            display: none;
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.25);
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            color: #FDA4AF;
+            font-size: 0.95rem;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(244, 63, 94, 0.05);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* Dashboard Results Panel */
+        .results-panel {
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Video Info Banner */
+        .video-banner-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            background-image: linear-gradient(to right, var(--glass-highlight), transparent);
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 1.75rem;
+            align-items: center;
+        }
+
+        @media (max-width: 640px) {
+            .video-banner-card {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .thumb-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            aspect-ratio: 16/9;
+        }
+
+        .thumb-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .video-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            line-height: 1.3;
+        }
+
+        .video-author {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .video-author i {
+            color: var(--primary);
+        }
+
+        .video-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .stat-item i {
+            font-size: 0.95rem;
+        }
+
+        /* Top metrics summary cards */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .summary-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .summary-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .metric-card {
+            background: rgba(17, 24, 39, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 1.25rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .metric-number {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-top: 0.5rem;
+            line-height: 1;
+        }
+
+        .metric-subtext {
+            font-size: 0.75rem;
+            color: var(--text-dark);
+            margin-top: 0.25rem;
+        }
+
+        /* Custom glow styles depending on card */
+        .card-positive::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 40px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--success);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 0 10px var(--success);
+        }
+        .card-neutral::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 40px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--neutral);
+            border-radius: 0 4px 4px 0;
+        }
+        .card-negative::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 40px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--danger);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 0 10px var(--danger);
+        }
+
+        /* Highlight general mood style */
+        .metric-card.mood-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            grid-column: span 1;
+        }
+        
+        .mood-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+
+        /* Specific Mood classes */
+        .mood-over-positive { color: #00F5A0; text-shadow: 0 0 10px rgba(0, 245, 160, 0.2); }
+        .mood-positive { color: var(--success); }
+        .mood-neutral { color: #E5E7EB; }
+        .mood-negative { color: #F87171; }
+        .mood-over-negative { color: var(--danger); text-shadow: 0 0 10px rgba(244, 63, 94, 0.2); }
+
+        /* Chart and Word Cloud Grid */
+        .visual-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .visual-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .visual-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 1.75rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .visual-card h3 {
+            align-self: flex-start;
+            margin-bottom: 1.25rem;
+            font-size: 1.15rem;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .visual-card h3 i {
+            color: var(--primary);
+        }
+
+        /* Pie Chart Visual Container */
+        .chart-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            min-height: 280px;
+        }
+
+        .chart-container img {
+            max-width: 100%;
+            max-height: 290px;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.4));
+            transition: var(--transition);
+        }
+
+        .chart-container img:hover {
+            transform: scale(1.02);
+        }
+
+        /* Key Phrases Tag Container */
+        .phrases-container {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            justify-content: center;
+            align-items: center;
+            min-height: 240px;
+            padding: 1rem;
+            background: rgba(10, 15, 26, 0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .keyword-tag {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            transition: var(--transition);
+            cursor: default;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .keyword-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Tiered sizes/colors for keywords based on count */
+        .tag-size-5 { background: rgba(99, 102, 241, 0.25); color: #C7D2FE; font-size: 1.1rem; border-color: rgba(99, 102, 241, 0.4); font-weight: 700; }
+        .tag-size-4 { background: rgba(139, 92, 246, 0.2); color: #DDD6FE; font-size: 1rem; border-color: rgba(139, 92, 246, 0.3); font-weight: 600; }
+        .tag-size-3 { background: rgba(16, 185, 129, 0.15); color: #A7F3D0; font-size: 0.9rem; border-color: rgba(16, 185, 129, 0.25); }
+        .tag-size-2 { background: rgba(255, 255, 255, 0.05); color: #E5E7EB; font-size: 0.8rem; }
+        .tag-size-1 { background: rgba(255, 255, 255, 0.02); color: #9CA3AF; font-size: 0.75rem; }
+
+        /* Comment Explorer Cards & Tabs */
+        .explorer-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 1.75rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            background-image: linear-gradient(to bottom, var(--glass-highlight), transparent);
+        }
+
+        .explorer-card h3 {
+            margin-bottom: 1.25rem;
+            font-size: 1.15rem;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .explorer-card h3 i {
+            color: var(--primary);
+        }
+
+        .tabs-header {
+            display: flex;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 1.5rem;
+            gap: 0.5rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1.25rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tab-btn.active {
+            color: #FFFFFF;
+            border-bottom-color: var(--primary);
+        }
+
+        /* Specific counts on tabs */
+        .tab-btn span {
+            font-size: 0.75rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .btn-pos span { background: var(--success-glow); color: var(--success); }
+        .btn-neu span { background: var(--neutral-glow); color: var(--text-muted); }
+        .btn-neg span { background: var(--danger-glow); color: var(--danger); }
+
+        .comments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Scrollbar styles */
+        .comments-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .comments-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 10px;
+        }
+        .comments-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .comments-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .comment-card {
+            background: rgba(10, 15, 26, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 1.25rem;
+            transition: var(--transition);
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .comment-card:hover {
+            border-color: rgba(255, 255, 255, 0.08);
+            background: rgba(10, 15, 26, 0.5);
+            transform: translateX(4px);
+        }
+
+        .author-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #1E293B;
+            flex-shrink: 0;
+        }
+
+        .author-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .comment-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .comment-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .comment-author-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+
+        .comment-time {
+            font-size: 0.75rem;
+            color: var(--text-dark);
+        }
+
+        .comment-text {
+            font-size: 0.88rem;
+            color: var(--text-main);
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        .comment-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .comment-likes {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--text-dark);
+        }
+
+        .comment-likes i {
+            color: var(--text-dark);
+        }
+        
+        .comment-likes.has-likes {
+            color: var(--text-muted);
+        }
+        
+        .comment-likes.has-likes i {
+            color: var(--primary);
+        }
+
+        .comment-badge {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.1rem 0.5rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .badge-positive { background: var(--success-glow); color: #34D399; }
+        .badge-neutral { background: var(--neutral-glow); color: #D1D5DB; }
+        .badge-negative { background: var(--danger-glow); color: #F87171; }
+
+        .no-comments-msg {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .no-comments-msg i {
+            font-size: 2rem;
+            color: var(--text-dark);
+        }
+
+        /* Footer styling */
+        footer {
+            margin-top: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow-2"></div>
+    
+    <div class="wrapper">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-chart-pie"></i>
+                <h1>YT Sentiment Lens</h1>
+                <span>v1.0</span>
+            </div>
+            <div class="system-status">
+                <div class="status-dot"></div>
+                <span>Engine Active</span>
+            </div>
+        </header>
+
+        <!-- Error Notification Banner -->
+        <div class="error-banner" id="errorBanner">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="errorMessage">Error text goes here.</span>
+        </div>
+
+        <!-- Dashboard Grid Layout -->
+        <div class="dashboard-grid">
+            <!-- Left Console Panel -->
+            <div class="console-card">
+                <div class="card-title-sec">
+                    <i class="fa-solid fa-sliders"></i>
+                    <h3>Control Console</h3>
+                </div>
+                
+                <form id="analyzeForm" onsubmit="event.preventDefault(); triggerAnalysis();">
+                    <!-- API Key Form field -->
+                    <div class="form-group">
+                        <label for="apiKey">YouTube API Key v3</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="apiKey" placeholder="AIzaSy..." autocomplete="off">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <label class="api-key-save">
+                            <input type="checkbox" id="saveKey" checked>
+                            <span>Remember Key on this device</span>
+                        </label>
+                        <p class="helper-text">
+                            Key is stored locally in your browser's private localStorage. It is never shared.
+                        </p>
+                    </div>
+
+                    <!-- YouTube Video URL field -->
+                    <div class="form-group">
+                        <label for="videoUrl">YouTube Video URL / ID</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." required>
+                            <i class="fa-solid fa-link"></i>
+                        </div>
+                        <p class="helper-text">
+                            Supports standard links, youtu.be, shorts, embeds, and mobile links.
+                        </p>
+                    </div>
+
+                    <!-- Limit slider -->
+                    <div class="form-group">
+                        <label for="commentLimit">Comment Sample Size</label>
+                        <div class="slider-container">
+                            <input type="range" id="commentLimit" min="50" max="500" step="50" value="100" oninput="document.getElementById('limitDisplay').innerText = this.value;">
+                            <span class="slider-value" id="limitDisplay">100</span>
+                        </div>
+                        <p class="helper-text">
+                            Higher counts offer precise analysis but require more API quota and load time.
+                        </p>
+                    </div>
+
+                    <button type="submit" class="btn-analyze" id="btnSubmit">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        <span>Analyze Sentiment</span>
+                    </button>
+                </form>
+
+                <!-- Instructions -->
+                <div class="instructions">
+                    <h4>How to get an API Key</h4>
+                    <ul>
+                        <li><i class="fa-solid fa-circle-dot"></i><span>Go to the <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>.</span></li>
+                        <li><i class="fa-solid fa-circle-dot"></i><span>Create a project and enable the <b>YouTube Data API v3</b>.</span></li>
+                        <li><i class="fa-solid fa-circle-dot"></i><span>Create credentials (API Key) and paste it here.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Visual Workspace -->
+            <div class="main-display">
+                <!-- Welcome Card (Default state) -->
+                <div class="welcome-card" id="welcomePanel">
+                    <div class="welcome-icon-box">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h2>Analyze YouTube Audience Moods</h2>
+                    <p>
+                        Paste a YouTube video URL and key in your API Key on the left console to get a deep semantic sentiment breakdown. We'll crawl comments, run the TextBlob NLP engine, generate custom visual distributions, and render a comprehensive dashboard!
+                    </p>
+                    <div class="system-status" style="max-width: 250px;">
+                        <i class="fa-solid fa-circle-nodes" style="color: var(--primary);"></i>
+                        <span>Zero-server logs sentiment algorithm</span>
+                    </div>
+                </div>
+
+                <!-- Skeleton Loader Panel -->
+                <div class="loader-card" id="loadingPanel">
+                    <div class="spinner-ring"></div>
+                    <h3 id="loaderTitle">Analyzing Sentiment Data</h3>
+                    <div class="loader-status">
+                        <i class="fa-solid fa-gears fa-spin"></i>
+                        <span id="loaderStatusText">Connecting to YouTube servers...</span>
+                    </div>
+                    <div class="skeleton-loader">
+                        <div class="skeleton-line" style="width: 85%;"></div>
+                        <div class="skeleton-line" style="width: 100%;"></div>
+                        <div class="skeleton-line" style="width: 90%;"></div>
+                        <div class="skeleton-line" style="width: 60%; height: 30px; margin-top: 1rem; border-radius: 12px;"></div>
+                    </div>
+                </div>
+
+                <!-- Results Dashboard Panel -->
+                <div class="results-panel" id="resultsPanel">
+                    <!-- Video Info Banner Card -->
+                    <div class="video-banner-card">
+                        <div class="thumb-wrapper">
+                            <img src="" alt="Video Thumbnail" id="videoThumb">
+                        </div>
+                        <div class="video-meta">
+                            <h2 class="video-title" id="videoTitle">Video Title Loading...</h2>
+                            <div class="video-author">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span id="videoChannel">Channel Title</span>
+                            </div>
+                            <div class="video-stats">
+                                <div class="stat-item">
+                                    <i class="fa-solid fa-eye"></i>
+                                    <span id="videoViews">0 Views</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fa-solid fa-thumbs-up"></i>
+                                    <span id="videoLikes">0 Likes</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fa-solid fa-calendar-days"></i>
+                                    <span id="videoDate">Published Date</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top row cards -->
+                    <div class="summary-row">
+                        <!-- Total Analysed -->
+                        <div class="metric-card">
+                            <span class="metric-label">Analyzed Comments</span>
+                            <span class="metric-number" id="metricTotal">0</span>
+                            <span class="metric-subtext">Total Crawled Samples</span>
+                        </div>
+                        <!-- Average Mood Score -->
+                        <div class="metric-card mood-card">
+                            <span class="metric-label">Overall Mood</span>
+                            <span class="mood-text mood-neutral" id="metricMood">Neutral</span>
+                            <span class="metric-subtext" id="metricScore">Avg Polarity: 0.0</span>
+                        </div>
+                        <!-- Positive Percent -->
+                        <div class="metric-card card-positive">
+                            <span class="metric-label">Positive Sentiment</span>
+                            <span class="metric-number" style="color: var(--success);" id="metricPosPct">0%</span>
+                            <span class="metric-subtext" id="metricPosCount">0 comments</span>
+                        </div>
+                        <!-- Negative Percent -->
+                        <div class="metric-card card-negative">
+                            <span class="metric-label">Negative Sentiment</span>
+                            <span class="metric-number" style="color: var(--danger);" id="metricNegPct">0%</span>
+                            <span class="metric-subtext" id="metricNegCount">0 comments</span>
+                        </div>
+                    </div>
+
+                    <!-- Visual distributions -->
+                    <div class="visual-grid">
+                        <!-- Matplotlib Graph Card -->
+                        <div class="visual-card">
+                            <h3><i class="fa-solid fa-chart-pie"></i>Matplotlib Distribution Graph</h3>
+                            <div class="chart-container">
+                                <img src="" alt="Matplotlib Pie Chart" id="pieChartImg">
+                            </div>
+                        </div>
+
+                        <!-- Key Phrase cloud card -->
+                        <div class="visual-card">
+                            <h3><i class="fa-solid fa-cloud"></i>Popular Keywords In Comments</h3>
+                            <div class="phrases-container" id="keywordsCloud">
+                                <!-- Dynamic keywords tags will render here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comment Explorer Card -->
+                    <div class="explorer-card">
+                        <h3><i class="fa-solid fa-comments"></i>Comment Stream Explorer</h3>
+                        
+                        <div class="tabs-header">
+                            <button class="tab-btn active btn-pos" onclick="switchTab('positive', this)">
+                                <i class="fa-solid fa-circle-check"></i>Positive <span id="badgePosCount">0</span>
+                            </button>
+                            <button class="tab-btn btn-neu" onclick="switchTab('neutral', this)">
+                                <i class="fa-solid fa-circle-minus"></i>Neutral <span id="badgeNeuCount">0</span>
+                            </button>
+                            <button class="tab-btn btn-neg" onclick="switchTab('negative', this)">
+                                <i class="fa-solid fa-circle-xmark"></i>Negative <span id="badgeNegCount">0</span>
+                            </button>
+                        </div>
+
+                        <!-- Dynamic list of comments -->
+                        <div class="comments-list" id="commentsStream">
+                            <!-- Comment cards dynamically spawned -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>YT Sentiment Lens — Powered by Python, Flask, TextBlob, and Matplotlib. Created as a premium web application.</p>
+        </footer>
+    </div>
+
+    <!-- Client Side App logic -->
+    <script>
+        // Check for local storage API key
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem('yt_api_key');
+            if (savedKey) {
+                document.getElementById('apiKey').value = savedKey;
+                document.getElementById('saveKey').checked = true;
+            }
+        });
+
+        // Global variables for dashboard comments data
+        let analysisData = null;
+
+        function showNotification(msg) {
+            const banner = document.getElementById('errorBanner');
+            const label = document.getElementById('errorMessage');
+            label.innerText = msg;
+            banner.style.display = 'flex';
+            
+            // Scroll to banner on mobile
+            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function hideNotification() {
+            document.getElementById('errorBanner').style.display = 'none';
+        }
+
+        // Steps indicator for loading screen
+        const steps = [
+            "Validating video parameters...",
+            "Connecting to YouTube Data API...",
+            "Crawling comments threads pagination...",
+            "Analyzing comment arrays with TextBlob...",
+            "Computing averages & polarity bounds...",
+            "Rendering Matplotlib transparent pie chart...",
+            "Preparing dashboard metrics visualization..."
+        ];
+
+        function runLoadingAnimation(stepIndex = 0) {
+            const panel = document.getElementById('loadingPanel');
+            if (panel.style.display !== 'flex') return;
+            
+            const label = document.getElementById('loaderStatusText');
+            label.innerText = steps[stepIndex % steps.length];
+            
+            setTimeout(() => {
+                runLoadingAnimation(stepIndex + 1);
+            }, 1800);
+        }
+
+        function formatCompactNumber(number) {
+            if (number >= 1.0e+6) return (number / 1.0e+6).toFixed(1) + 'M';
+            if (number >= 1.0e+3) return (number / 1.0e+3).toFixed(1) + 'K';
+            return number.toString();
+        }
+
+        async function triggerAnalysis() {
+            const urlInput = document.getElementById('videoUrl').value.strip ? document.getElementById('videoUrl').value.strip() : document.getElementById('videoUrl').value;
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const limit = document.getElementById('commentLimit').value;
+            const saveCheck = document.getElementById('saveKey').checked;
+
+            hideNotification();
+
+            if (!urlInput) {
+                showNotification("Please specify a YouTube video URL.");
+                return;
+            }
+
+            // Save key if checked
+            if (saveCheck && apiKey) {
+                localStorage.setItem('yt_api_key', apiKey);
+            } else {
+                localStorage.removeItem('yt_api_key');
+            }
+
+            // Display loading panel
+            document.getElementById('welcomePanel').style.display = 'none';
+            document.getElementById('resultsPanel').style.display = 'none';
+            document.getElementById('loadingPanel').style.display = 'flex';
+            document.getElementById('btnSubmit').disabled = true;
+            document.getElementById('btnSubmit').style.opacity = '0.7';
+
+            runLoadingAnimation(0);
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: urlInput,
+                        limit: parseInt(limit),
+                        api_key: apiKey
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || "An unknown backend error occurred.");
+                }
+
+                // Success! Store and update dashboard
+                analysisData = data;
+                populateDashboard(data);
+                
+                // Toggle view panels
+                document.getElementById('loadingPanel').style.display = 'none';
+                document.getElementById('resultsPanel').style.display = 'flex';
+
+            } catch (err) {
+                showNotification(err.message || "Failed to complete sentiment extraction.");
+                document.getElementById('loadingPanel').style.display = 'none';
+                document.getElementById('welcomePanel').style.display = 'flex';
+            } finally {
+                document.getElementById('btnSubmit').disabled = false;
+                document.getElementById('btnSubmit').style.opacity = '1';
+            }
+        }
+
+        function populateDashboard(data) {
+            // 1. Set Video Metadata
+            document.getElementById('videoThumb').src = data.video_details.thumbnail || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=320&auto=format&fit=crop&q=60';
+            document.getElementById('videoTitle').innerText = data.video_details.title;
+            document.getElementById('videoChannel').innerText = data.video_details.channel;
+            document.getElementById('videoViews').innerText = formatCompactNumber(data.video_details.views) + " Views";
+            document.getElementById('videoLikes').innerText = formatCompactNumber(data.video_details.likes) + " Likes";
+            document.getElementById('videoDate').innerText = data.video_details.published_at;
+
+            // 2. Set stats metrics
+            document.getElementById('metricTotal').innerText = data.stats.total_analyzed;
+            document.getElementById('badgePosCount').innerText = data.stats.positive_count;
+            document.getElementById('badgeNeuCount').innerText = data.stats.neutral_count;
+            document.getElementById('badgeNegCount').innerText = data.stats.negative_count;
+
+            document.getElementById('metricPosPct').innerText = data.stats.positive_pct + "%";
+            document.getElementById('metricPosCount').innerText = data.stats.positive_count + " comments";
+
+            document.getElementById('metricNegPct').innerText = data.stats.negative_pct + "%";
+            document.getElementById('metricNegCount').innerText = data.stats.negative_count + " comments";
+
+            // Set mood
+            const moodDisplay = document.getElementById('metricMood');
+            moodDisplay.innerText = data.stats.mood;
+            moodDisplay.className = "mood-text " + data.stats.mood_class;
+            document.getElementById('metricScore').innerText = "Avg Polarity: " + (data.stats.average_score > 0 ? "+" : "") + data.stats.average_score;
+
+            // 3. Set Matplotlib base64 image
+            document.getElementById('pieChartImg').src = "data:image/png;base64," + data.chart_image;
+
+            // 4. Build custom word cloud tags
+            generateWordCloud(data.all_comments_text);
+
+            // 5. Populate comments list with Positive by default
+            const activeTabBtn = document.querySelector('.tabs-header .active') || document.querySelector('.btn-pos');
+            const type = activeTabBtn.classList.contains('btn-pos') ? 'positive' : 
+                         activeTabBtn.classList.contains('btn-neu') ? 'neutral' : 'negative';
+            
+            // Re-apply active class correctly
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            activeTabBtn.classList.add('active');
+
+            renderCommentsList(type);
+        }
+
+        function switchTab(type, btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+            renderCommentsList(type);
+        }
+
+        function renderCommentsList(type) {
+            const listContainer = document.getElementById('commentsStream');
+            listContainer.innerHTML = ''; // reset
+
+            if (!analysisData || !analysisData.samples[type] || analysisData.samples[type].length === 0) {
+                listContainer.innerHTML = `
+                    <div class="no-comments-msg">
+                        <i class="fa-regular fa-comment-dots"></i>
+                        <p>No sample comments fell under the <b>${type}</b> classification boundary.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            analysisData.samples[type].forEach(c => {
+                const badgeClass = type === 'positive' ? 'badge-positive' : type === 'neutral' ? 'badge-neutral' : 'badge-negative';
+                const likeClass = c.likes > 0 ? 'comment-likes has-likes' : 'comment-likes';
+                
+                const cardHtml = `
+                    <div class="comment-card">
+                        <div class="author-avatar">
+                            <img src="${c.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=60'}" alt="Avatar" onerror="this.src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=60'">
+                        </div>
+                        <div class="comment-body">
+                            <div class="comment-header-row">
+                                <span class="comment-author-name">${c.author}</span>
+                                <span class="comment-time">${c.date}</span>
+                            </div>
+                            <p class="comment-text">${c.text}</p>
+                            <div class="comment-footer-row">
+                                <span class="${likeClass}">
+                                    <i class="fa-regular fa-thumbs-up"></i> ${c.likes} likes
+                                </span>
+                                <span class="comment-badge ${badgeClass}">
+                                    ${type} (score: ${c.score > 0 ? '+' : ''}${c.score})
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // Front-end dynamic stopwords filtering and frequency analysis
+        function generateWordCloud(commentsArray) {
+            const cloudContainer = document.getElementById('keywordsCloud');
+            cloudContainer.innerHTML = ''; // reset
+
+            const stopWords = new Set([
+                'the', 'a', 'to', 'and', 'of', 'in', 'is', 'you', 'that', 'it', 'for', 'on', 'this', 'i', 'my', 'with', 
+                'as', 'are', 'your', 'be', 'at', 'have', 'from', 'this', 'that', 'but', 'not', 'was', 'so', 'can', 'or', 
+                'an', 'about', 'just', 'if', 'me', 'we', 'like', 'video', 'youtube', 'channel', 'about', 'how', 'more',
+                'what', 'out', 'up', 'all', 'has', 'very', 'he', 'she', 'they', 'them', 'who', 'get', 'would', 'do',
+                'will', 'no', 'yes', 'so', 'there', 'their', 'our', 'us', 'there', 'go', 'make', 'one', 'good', 'great'
+            ]);
+
+            const frequencies = {};
+
+            commentsArray.forEach(text => {
+                const words = text.toLowerCase()
+                    .replace(/[^\w\s]/g, '') // remove punctuation
+                    .split(/\s+/);
+                
+                words.forEach(word => {
+                    if (word.length > 3 && !stopWords.has(word)) {
+                        frequencies[word] = (frequencies[word] || 0) + 1;
+                    }
+                });
+            });
+
+            // Sort and extract top 20 words
+            const sortedWords = Object.entries(frequencies)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 20);
+
+            if (sortedWords.length === 0) {
+                cloudContainer.innerHTML = `<span class="comment-time">Analyzing lexicon frequencies...</span>`;
+                return;
+            }
+
+            const maxFreq = sortedWords[0][1];
+            const minFreq = sortedWords[sortedWords.length - 1][1];
+            const range = maxFreq - minFreq || 1;
+
+            sortedWords.forEach(([word, count]) => {
+                // Assign a tag-size from 1 to 5 based on count
+                let sizeClass = 1;
+                const ratio = (count - minFreq) / range;
+                if (ratio > 0.8) sizeClass = 5;
+                else if (ratio > 0.5) sizeClass = 4;
+                else if (ratio > 0.3) sizeClass = 3;
+                else if (ratio > 0.1) sizeClass = 2;
+                
+                const tag = document.createElement('span');
+                tag.className = `keyword-tag tag-size-${sizeClass}`;
+                tag.title = `${count} occurrences`;
+                tag.innerText = word;
+                
+                cloudContainer.appendChild(tag);
+            });
+        }
+    </script>
+</body>
+</html>
