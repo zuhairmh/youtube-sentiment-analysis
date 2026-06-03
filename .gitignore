@@ -9,3 +9,7 @@ __pycache__/
 .idea/
 
 node_modules/
+
+datasets/
+
+test_textblob.py
