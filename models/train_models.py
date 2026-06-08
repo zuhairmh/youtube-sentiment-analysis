@@ -84,6 +84,7 @@ char_vectorizer = TfidfVectorizer(
     analyzer='char',
     ngram_range=(3, 4),
     min_df=50,
+    max_df=0.90,
     max_features=100000,
     sublinear_tf=True
 )
